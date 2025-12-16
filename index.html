@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disney Virtual Studio | Magic Editor</title>
+    
+    <!-- Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        studio: {
+                            50: '#f0f9ff', // Alice Blue
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e', // Deep Navy
+                        },
+                        magic: {
+                            500: '#eab308', // Pixie Dust Gold
+                            600: '#ca8a04',
+                        }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out forwards',
+                        'slide-up': 'slideUp 0.4s ease-out forwards',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* CSS Filters to Simulate AI Styles */
+        .style-cartoon {
+            filter: saturate(3.5) contrast(1.3) brightness(1.1);
+        }
+        .style-sketch {
+            filter: grayscale(1) contrast(5) brightness(1.5);
+        }
+        .style-abstract {
+            filter: invert(1) hue-rotate(180deg) contrast(1.2);
+        }
+        .style-noir {
+            filter: grayscale(1) contrast(2) brightness(0.6) drop-shadow(0 0 10px rgba(0,0,0,0.5));
+        }
+
+        /* Frame Container Aspect Ratio */
+        .frame-container {
+            aspect-ratio: 4/5; /* Standard Portrait Frame */
+        }
+        
+        /* Custom Scrollbar */
+        .custom-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body class="bg-studio-50 text-studio-900 flex flex-col min-h-screen lg:h-screen lg:overflow-hidden selection:bg-magic-500 selection:text-white">
+
+    <!-- Navbar -->
+    <header class="h-16 bg-white border-b border-studio-200 flex items-center justify-between px-6 shrink-0 z-20">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-studio-900 rounded-lg flex items-center justify-center text-magic-500">
+                <i class="ph-fill ph-castle-turret text-xl"></i>
+            </div>
+            <span class="font-bold text-lg tracking-tight text-studio-900">Magic Studio - Add Magic to Your Memories</span>
+        </div>
+    </header>
+
+    <!-- Main Layout: 4 Columns -->
+    <main class="flex-1 flex flex-col lg:flex-row lg:overflow-hidden relative">
+        
+        <!-- UI AREA 1: Source / Upload (Left) -->
+        <section class="w-full lg:w-[20%] bg-white border-r border-studio-200 flex flex-col z-10 shrink-0">
+            <div class="p-5 border-b border-studio-100">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-studio-400 mb-1">1. Your Photo</h2>
+                <p class="text-sm text-studio-500">Upload a photo to start.</p>
+            </div>
+            
+            <div class="p-5 lg:flex-1 lg:overflow-y-auto custom-scroll">
+                <!-- Upload Zone -->
+                <div id="drop-zone" class="relative group cursor-pointer">
+                    <input type="file" id="file-input" class="absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer" accept="image/*">
+                    
+                    <div id="upload-ui" class="border-2 border-dashed border-studio-300 rounded-xl bg-studio-50 h-48 lg:h-64 flex flex-col items-center justify-center text-center transition-all duration-300 group-hover:border-magic-500 group-hover:bg-magic-50/10">
+                        <div class="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center mb-3 text-studio-400 group-hover:text-magic-500 transition-colors">
+                            <i class="ph-duotone ph-magic-wand text-2xl"></i>
+                        </div>
+                        <h3 class="text-sm font-semibold text-studio-700">Click or Drag</h3>
+                        <p class="text-xs text-studio-400 mt-1 max-w-[150px]">JPG, PNG (Max 5MB)</p>
+                    </div>
+
+                    <!-- Image Preview (Hidden initially) -->
+                    <div id="source-preview-container" class="hidden relative h-48 lg:h-64 rounded-xl overflow-hidden shadow-sm border border-studio-200 group">
+                        <img id="source-image" class="w-full h-full object-cover" src="" alt="Original">
+                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10">
+                            <button id="remove-btn" class="bg-white/20 backdrop-blur text-white px-3 py-1.5 rounded-full text-xs font-medium hover:bg-white/30 transition">
+                                Replace
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- File Info -->
+                <div id="file-info" class="mt-4 hidden animate-slide-up">
+                    <div class="flex items-center gap-3 p-3 bg-studio-50 rounded-lg border border-studio-100">
+                        <div class="shrink-0 text-magic-600"><i class="ph-fill ph-image"></i></div>
+                        <div class="flex-1 min-w-0">
+                            <p id="filename" class="text-xs font-medium text-studio-700 truncate">image.jpg</p>
+                            <p class="text-[10px] text-studio-400">Ready</p>
+                        </div>
+                        <div class="h-2 w-2 rounded-full bg-green-500"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- UI AREA 2: Styles (Middle-Left) -->
+        <section class="w-full lg:w-[20%] bg-studio-50 border-r border-studio-200 flex flex-col z-10 shrink-0">
+            <div class="p-5 border-b border-studio-200/50">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-studio-400 mb-1">2. Magic Styles</h2>
+                <p class="text-sm text-studio-500">Choose inspiration.</p>
+            </div>
+
+            <div class="p-5 lg:flex-1 lg:overflow-y-auto custom-scroll space-y-3">
+                
+                <!-- Style Cards -->
+                <button onclick="selectStyle('cartoon')" id="btn-cartoon" class="style-card w-full text-left p-3 rounded-xl border border-studio-200 bg-white hover:border-magic-500 hover:shadow-md transition-all duration-200 group relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed">
+                    <div class="absolute inset-0 bg-magic-50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="relative flex items-start gap-3 z-10">
+                        <div class="h-10 w-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                            <i class="ph-duotone ph-paint-brush-broad text-xl"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-semibold text-studio-800">Toon Burst</h4>
+                            <p class="text-xs text-studio-500 mt-0.5">High saturation.</p>
+                        </div>
+                    </div>
+                    <div class="selection-ring absolute inset-0 border-2 border-magic-500 rounded-xl opacity-0 transition-opacity"></div>
+                </button>
+
+                <button onclick="selectStyle('sketch')" id="btn-sketch" class="style-card w-full text-left p-3 rounded-xl border border-studio-200 bg-white hover:border-magic-500 hover:shadow-md transition-all duration-200 group relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed">
+                    <div class="absolute inset-0 bg-magic-50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="relative flex items-start gap-3 z-10">
+                        <div class="h-10 w-10 rounded-lg bg-gray-100 text-gray-700 flex items-center justify-center shrink-0">
+                            <i class="ph-duotone ph-pencil-simple-slash text-xl"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-semibold text-studio-800">Ink Sketch</h4>
+                            <p class="text-xs text-studio-500 mt-0.5">Dramatic lines.</p>
+                        </div>
+                    </div>
+                    <div class="selection-ring absolute inset-0 border-2 border-magic-500 rounded-xl opacity-0 transition-opacity"></div>
+                </button>
+
+                <button onclick="selectStyle('abstract')" id="btn-abstract" class="style-card w-full text-left p-3 rounded-xl border border-studio-200 bg-white hover:border-magic-500 hover:shadow-md transition-all duration-200 group relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed">
+                    <div class="absolute inset-0 bg-magic-50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="relative flex items-start gap-3 z-10">
+                        <div class="h-10 w-10 rounded-lg bg-pink-100 text-pink-600 flex items-center justify-center shrink-0">
+                            <i class="ph-duotone ph-spiral text-xl"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-semibold text-studio-800">Abstract</h4>
+                            <p class="text-xs text-studio-500 mt-0.5">Surreal colors.</p>
+                        </div>
+                    </div>
+                    <div class="selection-ring absolute inset-0 border-2 border-magic-500 rounded-xl opacity-0 transition-opacity"></div>
+                </button>
+
+                <button onclick="selectStyle('noir')" id="btn-noir" class="style-card w-full text-left p-3 rounded-xl border border-studio-200 bg-white hover:border-magic-500 hover:shadow-md transition-all duration-200 group relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed">
+                    <div class="absolute inset-0 bg-magic-50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="relative flex items-start gap-3 z-10">
+                        <div class="h-10 w-10 rounded-lg bg-slate-800 text-white flex items-center justify-center shrink-0">
+                            <i class="ph-duotone ph-moon text-xl"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-semibold text-studio-800">Noir Drama</h4>
+                            <p class="text-xs text-studio-500 mt-0.5">Deep shadows.</p>
+                        </div>
+                    </div>
+                    <div class="selection-ring absolute inset-0 border-2 border-magic-500 rounded-xl opacity-0 transition-opacity"></div>
+                </button>
+
+            </div>
+        </section>
+
+        <!-- UI AREA 3: Result (Middle-Right) -->
+        <section class="flex-1 bg-studio-100 p-6 flex flex-col relative overflow-hidden min-h-[600px] lg:min-h-0">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 via-yellow-400 to-blue-600 opacity-0 transition-opacity duration-300" id="loading-bar"></div>
+
+            <div class="flex items-center justify-between mb-4">
+                 <div>
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-studio-400 mb-1">3. Magic Canvas</h2>
+                    <p class="text-sm text-studio-500">Your enchanted masterpiece.</p>
+                 </div>
+                 <button id="download-btn" disabled class="px-4 py-2 bg-studio-900 text-white text-xs font-semibold rounded-lg shadow-lg shadow-studio-300 hover:bg-studio-800 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 border border-studio-700">
+                    <i class="ph-bold ph-download-simple"></i> Download
+                 </button>
+            </div>
+
+            <!-- Canvas Container -->
+            <div class="flex-1 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] bg-studio-50 shadow-inner relative flex items-center justify-center overflow-hidden p-4 lg:p-8">
+                
+                <!-- FRAMED RESULT CONTAINER -->
+                <div id="result-container" class="relative w-full max-w-md frame-container shadow-2xl transition-all duration-700 ease-out transform scale-100 opacity-100">
+                    
+                    <!-- 1. Placeholder -->
+                    <div id="canvas-placeholder" class="absolute inset-0 flex flex-col items-center justify-center bg-white p-6 text-center z-10">
+                        <div class="w-16 h-16 rounded-full bg-studio-50 border border-studio-100 flex items-center justify-center mb-3 text-magic-500 shadow-sm">
+                            <i class="ph-duotone ph-sparkle text-3xl"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-studio-900">Awaiting Magic</h3>
+                        <p class="text-xs text-studio-500 mt-1">Select a style to cast the spell.</p>
+                    </div>
+
+                    <!-- 2. Result Image -->
+                    <img id="result-image" src="" alt="Result" class="absolute inset-0 w-full h-full object-cover z-20 hidden" style="object-position: center 25%;">
+                    
+                    <!-- 3. Loader -->
+                    <div id="loader" class="absolute inset-0 bg-white/80 backdrop-blur-sm z-30 flex flex-col items-center justify-center hidden">
+                        <div class="animate-spin rounded-full h-10 w-10 border-b-4 border-magic-500 mb-3"></div>
+                        <p class="text-xs font-medium text-studio-800 animate-pulse">Sprinkling Pixie Dust...</p>
+                    </div>
+
+                    <!-- 4. Frame Overlay -->
+                    <img id="frame-overlay" src="" alt="Frame" class="absolute inset-0 w-full h-full object-fill z-40 pointer-events-none">
+                </div>
+                
+                <!-- Badge -->
+                <div id="result-badge" class="absolute bottom-6 bg-studio-900/90 backdrop-blur text-white px-4 py-2 rounded-full text-xs font-medium hidden animate-fade-in border border-white/20 z-50">
+                    <i class="ph-fill ph-sparkle mr-2 text-magic-500"></i> Disney Magic Applied
+                </div>
+            </div>
+        </section>
+
+        <!-- UI AREA 4: Share (Right) -->
+        <section class="w-full lg:w-[20%] bg-white border-l border-studio-200 flex flex-col z-10 shrink-0">
+            <div class="p-5 border-b border-studio-200/50">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-studio-400 mb-1">4. Share Magic</h2>
+                <p class="text-sm text-studio-500">Instant delivery.</p>
+            </div>
+
+            <div class="p-5 flex flex-col gap-6 lg:flex-1 lg:overflow-y-auto custom-scroll">
+                
+                <!-- Email Section -->
+                <div>
+                    <label class="block text-xs font-semibold text-studio-700 mb-2">Email to Yourself</label>
+                    <div class="flex gap-2">
+                        <input type="email" placeholder="you@email.com" class="w-full px-3 py-2 bg-studio-50 border border-studio-200 rounded-lg text-sm focus:outline-none focus:border-magic-500 transition-colors">
+                        <button class="bg-studio-900 text-white p-2 rounded-lg hover:bg-studio-800 transition-colors" title="Send">
+                            <i class="ph-bold ph-paper-plane-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <hr class="border-studio-100">
+
+                <!-- QR Code Section -->
+                <div class="text-center">
+                    <label class="block text-xs font-semibold text-studio-700 mb-3">Scan to Mobile</label>
+                    <div class="bg-studio-50 p-4 rounded-xl border border-studio-200 inline-block group hover:border-magic-500 transition-all cursor-pointer shadow-sm">
+                        <!-- Custom Generated SVG QR Code with Mickey Branding -->
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='%231e293b'%3E%3C!-- QR Modules --%3E%3Crect x='0' y='0' width='25' height='25' rx='3'/%3E%3Crect x='75' y='0' width='25' height='25' rx='3'/%3E%3Crect x='0' y='75' width='25' height='25' rx='3'/%3E%3Crect x='30' y='0' width='5' height='5'/%3E%3Crect x='40' y='0' width='5' height='5'/%3E%3Crect x='50' y='0' width='5' height='5'/%3E%3Crect x='60' y='0' width='5' height='5'/%3E%3Crect x='30' y='10' width='5' height='5'/%3E%3Crect x='60' y='10' width='5' height='5'/%3E%3Crect x='30' y='20' width='5' height='5'/%3E%3Crect x='40' y='20' width='5' height='5'/%3E%3Crect x='50' y='20' width='5' height='5'/%3E%3Crect x='60' y='20' width='5' height='5'/%3E%3Crect x='30' y='30' width='5' height='5'/%3E%3Crect x='40' y='30' width='5' height='5'/%3E%3Crect x='50' y='30' width='5' height='5'/%3E%3Crect x='60' y='30' width='5' height='5'/%3E%3Crect x='75' y='30' width='5' height='5'/%3E%3Crect x='85' y='30' width='5' height='5'/%3E%3Crect x='95' y='30' width='5' height='5'/%3E%3Crect x='0' y='30' width='5' height='5'/%3E%3Crect x='10' y='30' width='5' height='5'/%3E%3Crect x='20' y='30' width='5' height='5'/%3E%3Crect x='75' y='40' width='5' height='5'/%3E%3Crect x='95' y='40' width='5' height='5'/%3E%3Crect x='0' y='40' width='5' height='5'/%3E%3Crect x='20' y='40' width='5' height='5'/%3E%3Crect x='75' y='50' width='5' height='5'/%3E%3Crect x='85' y='50' width='5' height='5'/%3E%3Crect x='95' y='50' width='5' height='5'/%3E%3Crect x='0' y='50' width='5' height='5'/%3E%3Crect x='10' y='50' width='5' height='5'/%3E%3Crect x='20' y='50' width='5' height='5'/%3E%3Crect x='30' y='60' width='5' height='5'/%3E%3Crect x='60' y='60' width='5' height='5'/%3E%3Crect x='30' y='75' width='5' height='5'/%3E%3Crect x='40' y='75' width='5' height='5'/%3E%3Crect x='50' y='75' width='5' height='5'/%3E%3Crect x='60' y='75' width='5' height='5'/%3E%3Crect x='30' y='85' width='5' height='5'/%3E%3Crect x='60' y='85' width='5' height='5'/%3E%3Crect x='30' y='95' width='5' height='5'/%3E%3Crect x='40' y='95' width='5' height='5'/%3E%3Crect x='50' y='95' width='5' height='5'/%3E%3Crect x='60' y='95' width='5' height='5'/%3E%3Crect x='75' y='75' width='25' height='25' fill='%2300f3ff' rx='5' opacity='0.2'/%3E%3C!-- Mickey Silhouette Center --%3E%3Ccircle cx='50' cy='50' r='12' fill='%2300f3ff' /%3E%3Ccircle cx='38' cy='40' r='7' fill='%2300f3ff' /%3E%3Ccircle cx='62' cy='40' r='7' fill='%2300f3ff' /%3E%3C/svg%3E" class="w-32 h-32 opacity-80 group-hover:opacity-100 transition-opacity" alt="Scan QR">
+                    </div>
+                    <p class="text-[10px] text-studio-400 mt-2">Open camera & scan to view</p>
+                </div>
+
+                <div class="mt-auto bg-magic-50 p-4 rounded-xl border border-magic-500/20 text-center">
+                    <p class="text-xs text-magic-600 font-medium">✨ Magic Tip</p>
+                    <p class="text-[10px] text-studio-500 mt-1">Share your creation with friends to spread the joy!</p>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-studio-900 text-white px-4 py-3 rounded-lg shadow-xl translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center gap-3 border-l-4 border-magic-500">
+        <i class="ph-fill ph-check-circle text-magic-500"></i>
+        <span class="text-sm font-medium">Magic spell cast successfully!</span>
+    </div>
+
+    <script>
+        // --- APP CONFIGURATION ---
+        const CONFIG = {
+            // SET TO TRUE to use real N8N Backend
+            useN8n: false, 
+            n8nWebhookUrl: 'https://your-n8n-instance.com/webhook/disney-style',
+            
+            // FRAME CONFIGURATION
+            // TRON-inspired Neon Turquoise/Blue Frame with Circuit Glow
+            frameOverlayUrl: "data:image/svg+xml,%3Csvg width='400' height='500' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3ClinearGradient id='tron' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%2300f3ff;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%230099ff;stop-opacity:1' /%3E%3C/linearGradient%3E%3Cfilter id='glow'%3E%3CfeGaussianBlur stdDeviation='4' result='coloredBlur'/%3E%3CfeMerge%3E%3CfeMergeNode in='coloredBlur'/%3E%3CfeMergeNode in='SourceGraphic'/%3E%3C/feMerge%3E%3C/filter%3E%3C/defs%3E%3C!-- Main Outer Border --%3E%3Crect x='5' y='5' width='390' height='490' rx='15' ry='15' fill='none' stroke='url(%23tron)' stroke-width='5' filter='url(%23glow)' /%3E%3C!-- Inner Thin Circuit Line --%3E%3Crect x='15' y='15' width='370' height='470' rx='10' ry='10' fill='none' stroke='%2300f3ff' stroke-width='1' opacity='0.6' /%3E%3C!-- Corner Brackets --%3E%3Cpath d='M40 25 L25 25 L25 40' stroke='%2300f3ff' stroke-width='3' fill='none' filter='url(%23glow)' /%3E%3Cpath d='M360 25 L375 25 L375 40' stroke='%2300f3ff' stroke-width='3' fill='none' filter='url(%23glow)' /%3E%3Cpath d='M25 460 L25 475 L40 475' stroke='%2300f3ff' stroke-width='3' fill='none' filter='url(%23glow)' /%3E%3Cpath d='M375 460 L375 475 L360 475' stroke='%2300f3ff' stroke-width='3' fill='none' filter='url(%23glow)' /%3E%3C/svg%3E"
+        };
+
+        // State
+        const state = {
+            imageLoaded: false,
+            currentImageSrc: null,
+            currentFile: null,
+            selectedStyle: null,
+            isProcessing: false
+        };
+
+        // DOM Elements
+        const fileInput = document.getElementById('file-input');
+        const uploadUi = document.getElementById('upload-ui');
+        const sourcePreviewContainer = document.getElementById('source-preview-container');
+        const sourceImage = document.getElementById('source-image');
+        const fileInfo = document.getElementById('file-info');
+        const filenameDisplay = document.getElementById('filename');
+        const canvasPlaceholder = document.getElementById('canvas-placeholder');
+        const resultContainer = document.getElementById('result-container'); // NEW container
+        const resultImage = document.getElementById('result-image');
+        const frameOverlay = document.getElementById('frame-overlay'); // NEW frame
+        const loader = document.getElementById('loader');
+        const loadingBar = document.getElementById('loading-bar');
+        const resultBadge = document.getElementById('result-badge');
+        const downloadBtn = document.getElementById('download-btn');
+        const dropZone = document.getElementById('drop-zone');
+        const styleButtons = document.querySelectorAll('.style-card');
+
+        // --- Event Listeners ---
+
+        // Image Load Handler (Critical for network images)
+        resultImage.onload = () => {
+            // Only hide loader when image is actually ready in the DOM
+            if (state.isProcessing || !resultImage.src) return;
+
+            // Show Image, Hide Placeholder
+            resultImage.classList.remove('hidden');
+            canvasPlaceholder.classList.add('hidden');
+            
+            // Hide Loader
+            loader.classList.add('hidden');
+            loadingBar.classList.add('opacity-0');
+            
+            // Show Badge & Button
+            resultBadge.classList.remove('hidden');
+            downloadBtn.disabled = false;
+        };
+
+        // Initialize Frame
+        if (CONFIG.frameOverlayUrl) {
+            frameOverlay.src = CONFIG.frameOverlayUrl;
+            // Add robust error handling
+            frameOverlay.onerror = function() {
+                console.warn("Frame image failed to load. Hiding frame overlay.");
+                this.style.display = 'none';
+                resultContainer.style.border = '4px solid #0ea5e9';
+            };
+        }
+
+        resultImage.onerror = () => {
+            if (state.isProcessing) {
+                state.isProcessing = false;
+                loader.classList.add('hidden');
+                loadingBar.classList.add('opacity-0');
+                showToast('Failed to load magic image.', 'error');
+                
+                // Reset placeholder if failed
+                canvasPlaceholder.classList.remove('hidden');
+                resultImage.classList.add('hidden');
+            }
+        };
+
+        // Drag & Drop
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadUi.classList.add('border-magic-500', 'bg-magic-50/10');
+        });
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            uploadUi.classList.remove('border-magic-500', 'bg-magic-50/10');
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadUi.classList.remove('border-magic-500', 'bg-magic-50/10');
+            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        });
+
+        // File Input
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) handleFile(e.target.files[0]);
+        });
+
+        // Download Action
+        downloadBtn.addEventListener('click', () => {
+            downloadComposite();
+        });
+
+        // Function to Composite Frame + Image and Download
+        function downloadComposite() {
+            const canvas = document.createElement('canvas');
+            // Match the SVG Frame dimensions defined in the CONFIG data URI (400x500)
+            // We multiply by 2 for better Retina/High-Res quality
+            canvas.width = 800;
+            canvas.height = 1000;
+            const ctx = canvas.getContext('2d');
+
+            // --- FILTER DEFINITIONS ---
+            // These must match the CSS values defined in the <style> block at the top
+            const filterMap = {
+                'cartoon': 'saturate(3.5) contrast(1.3) brightness(1.1)',
+                'sketch': 'grayscale(1) contrast(5) brightness(1.5)',
+                'abstract': 'invert(1) hue-rotate(180deg) contrast(1.2)',
+                'noir': 'grayscale(1) contrast(2) brightness(0.6)' 
+            };
+
+            // 1. Draw the Processed User Image
+            const img = resultImage;
+            
+            if (img.naturalWidth && img.naturalHeight) {
+                const imgAspect = img.naturalWidth / img.naturalHeight;
+                const canvasAspect = canvas.width / canvas.height;
+                
+                let renderW, renderH, offsetX, offsetY;
+
+                if (imgAspect > canvasAspect) {
+                    // Image is wider than canvas (crop sides)
+                    renderH = canvas.height;
+                    renderW = canvas.height * imgAspect;
+                    offsetX = (canvas.width - renderW) / 2; // Center horizontally
+                    offsetY = 0;
+                } else {
+                    // Image is taller than canvas (crop top/bottom)
+                    renderW = canvas.width;
+                    renderH = canvas.width / imgAspect;
+                    offsetX = 0;
+                    // Position: center 25% means aligning the 25% vertical point
+                    offsetY = (canvas.height - renderH) * 0.25; 
+                }
+
+                // APPLY FILTER TO CONTEXT (Only if using CSS Simulation Mode)
+                if (!CONFIG.useN8n && state.selectedStyle && filterMap[state.selectedStyle]) {
+                    ctx.filter = filterMap[state.selectedStyle];
+                }
+
+                // Draw image with calculated cropping
+                ctx.drawImage(img, offsetX, offsetY, renderW, renderH);
+
+                // RESET FILTER (So the frame doesn't get filtered)
+                ctx.filter = 'none';
+            }
+
+            // 2. Draw the Frame Overlay
+            ctx.drawImage(frameOverlay, 0, 0, canvas.width, canvas.height);
+
+            // 3. Trigger Download
+            const link = document.createElement('a');
+            link.download = `magic-memory-${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            
+            showToast('Creation downloaded to your device!');
+        }
+
+        // --- Functions ---
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                showToast('Please upload a valid image file', 'error');
+                return;
+            }
+            state.currentFile = file;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                state.currentImageSrc = e.target.result;
+                state.imageLoaded = true;
+                
+                // Update UI
+                uploadUi.classList.add('hidden');
+                sourcePreviewContainer.classList.remove('hidden');
+                sourceImage.src = state.currentImageSrc;
+                filenameDisplay.textContent = file.name;
+                fileInfo.classList.remove('hidden');
+                
+                resetCanvas();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function selectStyle(style) {
+            if (!state.imageLoaded || state.isProcessing) {
+                if (!state.imageLoaded) showToast('Please upload an image first', 'error');
+                return;
+            }
+            state.selectedStyle = style;
+            updateStyleUI(style);
+            processImage(style);
+        }
+
+        function updateStyleUI(selectedId) {
+            styleButtons.forEach(btn => {
+                const ring = btn.querySelector('.selection-ring');
+                if (ring) ring.classList.add('opacity-0');
+                btn.classList.remove('bg-magic-50');
+            });
+            const activeBtn = document.getElementById(`btn-${selectedId}`);
+            if (activeBtn) {
+                const ring = activeBtn.querySelector('.selection-ring');
+                if (ring) ring.classList.remove('opacity-0');
+                activeBtn.classList.add('bg-magic-50');
+            }
+        }
+
+        async function processImage(style) {
+            state.isProcessing = true;
+            
+            // 1. Show Loading UI (Internal to frame now)
+            loadingBar.classList.remove('opacity-0');
+            loader.classList.remove('hidden');
+            resultBadge.classList.add('hidden');
+            downloadBtn.disabled = true;
+            
+            // Hide result to show work is happening
+            resultImage.classList.add('hidden'); 
+
+            // Reset Base Classes
+            resultImage.className = 'absolute inset-0 w-full h-full object-cover z-20 hidden'; 
+
+            try {
+                if (CONFIG.useN8n) {
+                    // --- LIVE N8N MODE ---
+                    const payload = {
+                        style: style,
+                        image: state.currentImageSrc
+                    };
+
+                    const response = await fetch(CONFIG.n8nWebhookUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) throw new Error('Magic spell failed');
+                    const data = await response.json();
+                    
+                    if (!data.outputUrl) throw new Error('No image returned');
+
+                    resultImage.src = data.outputUrl;
+                    showToast(`Magic received from server!`);
+
+                } else {
+                    // --- DEMO MODE (CSS Simulation) ---
+                    await new Promise(r => setTimeout(r, 1200)); // Mock delay
+                    
+                    resultImage.src = state.currentImageSrc;
+                    
+                    // Add CSS Simulation Class
+                    resultImage.classList.add(`style-${style}`);
+                    
+                    // Trigger onload manually for data-uri
+                    state.isProcessing = false; 
+                    resultImage.onload(); 
+                    
+                    showToast(`Applied ${style} magic!`);
+                }
+
+            } catch (error) {
+                console.error(error);
+                state.isProcessing = false;
+                loader.classList.add('hidden');
+                loadingBar.classList.add('opacity-0');
+                showToast(CONFIG.useN8n ? 'Connection to Magic Server failed' : 'Magic failed', 'error');
+                
+                // Reset to empty state on error
+                canvasPlaceholder.classList.remove('hidden');
+            }
+        }
+
+        function resetCanvas() {
+            // Restore Placeholder
+            canvasPlaceholder.classList.remove('hidden');
+            // Hide Image
+            resultImage.classList.add('hidden');
+            resultImage.className = 'absolute inset-0 w-full h-full object-cover z-20 hidden'; 
+            
+            resultBadge.classList.add('hidden');
+            downloadBtn.disabled = true;
+            
+            styleButtons.forEach(btn => {
+                const ring = btn.querySelector('.selection-ring');
+                if (ring) ring.classList.add('opacity-0');
+            });
+            state.selectedStyle = null;
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon = toast.querySelector('i');
+            const text = toast.querySelector('span');
+
+            text.textContent = message;
+            if (type === 'error') {
+                icon.className = 'ph-fill ph-warning-circle text-red-400';
+            } else {
+                icon.className = 'ph-fill ph-check-circle text-magic-500';
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
